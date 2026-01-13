@@ -1,0 +1,7 @@
+openapi: 3.0.3
+info:
+  title: Financeiro B&L API
+  version: v1
+  description: |
+    Contrato v1 do dominio financeiro do sistema.
+    Qualquer mudanca exige versionamento (nova versao).
