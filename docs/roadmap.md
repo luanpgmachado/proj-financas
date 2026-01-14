@@ -1,63 +1,87 @@
-# Roadmap — Financeiro B&L
+# Roadmap - Financeiro B&L
 
-Este documento descreve a evolução planejada
-do sistema após a versão v1.
-
-Nada aqui deve ser considerado obrigatório
-para o MVP.
+Este documento descreve a evolucao planejada do sistema
+Financeiro B&L apos a entrega do MVP v1.
 
 ---
 
-## Automação
+## v1 — MVP (Atual)
 
-- Geração automática de lançamentos fixos mensais
-- Scheduler para recorrência
-- Alertas automáticos de vencimento
+Back-end:
+- POST /lancamentos
+- GET /lancamentos
+- Persistencia SQLite
+- Infra minima em VM Oracle
 
----
-
-## Períodos Financeiros
-
-- Abertura e fechamento de períodos
-- Bloqueio de edição após fechamento
-- Reabertura controlada com histórico
-
----
-
-## Auditoria
-
-- Histórico de alterações
-- Logs de criação/edição/exclusão
-- Rastreamento por usuário e data
+Front-end:
+- Login simulado
+- Dashboard simples
+- CRUD parcial de lancamentos
+- Estrutura de telas base
 
 ---
 
-## Dashboards Avançados
+## v1.1 — Consolidacoes
 
-- Comparação mês a mês
-- Tendência de gastos
-- Projeções simples
+Back-end:
+- GET /consolidacoes/mensal
+- Panorama anual
+- Calculos oficiais centralizados
 
----
-
-## Integrações
-
-- Importação via CSV
-- Integração Open Finance
-- Sincronização bancária futura
+Front-end:
+- Dashboard dinamico
+- Cards com dados reais
+- Visualizacao mensal/anual
 
 ---
 
-## IA & Insights
+## v2 — Autenticacao Real
 
-- Sugestão automática de categoria
-- Detecção de gastos atípicos
-- Projeção de saldo futuro
-- Recomendações financeiras básicas
+Back-end:
+- Usuarios reais
+- Autenticacao JWT
+- Escopo por usuario
+
+Front-end:
+- Login real
+- Protecao de rotas
+- Sessao persistente
 
 ---
 
-## Multi-dispositivo
+## v3 — Automacoes Financeiras
 
-- Experiência mobile-first
-- Progressive Web App (PWA)
+Back-end:
+- Lancamentos recorrentes
+- Parcelamentos automaticos
+- Fechamento de periodo
+
+Front-end:
+- Gestao de recorrencias
+- Visualizacao de parcelas
+- Alertas visuais
+
+---
+
+## v4 — Insights e IA
+
+Back-end:
+- Analise de padroes
+- Sugestoes de categoria
+- Previsoes simples
+
+Front-end:
+- Insights visuais
+- Sugestoes inteligentes
+- Comparativos historicos
+
+---
+
+## Fora de Escopo Atual
+
+- Integracao bancaria direta
+- Contabilidade formal
+- Multi-tenant corporativo
+- Marketplace ou plugins
+
+Esses itens so entram mediante nova avaliacao.
