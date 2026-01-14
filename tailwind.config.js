@@ -4,13 +4,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        sand: "var(--color-sand)",
-        ink: "var(--color-ink)",
-        "ink-soft": "var(--color-ink-soft)",
-        accent: "var(--color-accent)",
-        "accent-2": "var(--color-accent-2)",
-        card: "var(--color-card)",
-        border: "var(--color-border)"
+        sand: "rgb(var(--color-sand) / <alpha-value>)",
+        ink: "rgb(var(--color-ink) / <alpha-value>)",
+        "ink-soft": "rgb(var(--color-ink-soft) / <alpha-value>)",
+        accent: "rgb(var(--color-accent) / <alpha-value>)",
+        "accent-2": "rgb(var(--color-accent-2) / <alpha-value>)",
+        card: "rgb(var(--color-card) / <alpha-value>)",
+        border: "rgb(var(--color-border) / <alpha-value>)"
       },
       fontFamily: {
         display: ["'Space Grotesk'", "sans-serif"],

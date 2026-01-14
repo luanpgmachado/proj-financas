@@ -5,13 +5,13 @@
 @tailwind utilities;
 
 :root {
-  --color-sand: #f6f1e7;
-  --color-ink: #1f2a2e;
-  --color-ink-soft: #47545a;
-  --color-accent: #de6b48;
-  --color-accent-2: #3aa0a2;
-  --color-card: #ffffff;
-  --color-border: #eadfce;
+  --color-sand: 246 241 231;
+  --color-ink: 31 42 46;
+  --color-ink-soft: 71 84 90;
+  --color-accent: 222 107 72;
+  --color-accent-2: 58 160 162;
+  --color-card: 255 255 255;
+  --color-border: 234 223 206;
 }
 
 @layer base {
