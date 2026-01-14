@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 import re
+import sqlite3
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
@@ -262,7 +263,10 @@ def criar_lancamento(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 @app.get("/lancamentos")
 def listar_lancamentos() -> List[Dict[str, Any]]:
-    return list_lancamentos()
+    try:
+        return list_lancamentos()
+    except sqlite3.Error as exc:
+        raise HTTPException(status_code=500, detail="erro ao acessar banco") from exc
 
 
 @app.get("/consolidacoes/mensal")

@@ -29,6 +29,7 @@
 
 - Listagem simples: retorna todos os registros persistidos no SQLite, sem
   filtros, paginacao ou ordenacao no v1.
+- Erros de banco: falhas de acesso ao SQLite retornam HTTP 500.
 
 ## GET /consolidacoes/mensal
 

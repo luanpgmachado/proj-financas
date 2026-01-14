@@ -51,6 +51,7 @@ paths:
       tags:
         - financeiro
       summary: Listar lancamentos financeiros
+      description: Retorna todos os lancamentos persistidos, sem filtros, paginacao ou ordenacao.
       responses:
         "200":
           description: Lista de lancamentos.
@@ -61,7 +62,11 @@ paths:
                 items:
                   $ref: "#/components/schemas/LancamentoFinanceiro"
         "500":
-          description: Erro inesperado.
+          description: Erro ao acessar banco.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroInterno"
   /consolidacoes/mensal:
     get:
       tags:
@@ -524,6 +529,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ErroValidacaoItem"
+
+    ErroInterno:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          example: erro ao acessar banco
   parameters: {}
   responses: {}
   securitySchemes: {}
