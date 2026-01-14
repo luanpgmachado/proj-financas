@@ -1,7 +1,33 @@
 openapi: 3.0.3
+
 info:
   title: Financeiro B&L API
   version: v1
   description: |
-    Contrato v1 do dominio financeiro do sistema.
-    Qualquer mudanca exige versionamento (nova versao).
+    Contrato v1 do domínio financeiro do sistema.
+
+    Este contrato representa a fonte única de integração
+    entre back-end e front-end.
+
+    Qualquer mudança incompatível exige versionamento
+    (ex: v2, v3).
+
+servers:
+  - url: http://localhost
+    description: Ambiente local / desenvolvimento
+
+tags:
+  - name: financeiro
+    description: Operações do domínio financeiro
+  - name: autenticacao
+    description: Autenticação e controle de acesso
+
+paths: {}
+
+components:
+  schemas: {}
+  parameters: {}
+  responses: {}
+  securitySchemes: {}
+
+security: []

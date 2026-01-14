@@ -1,12 +1,12 @@
-# Infra Agent
+# Infra Agent (Reference)
 
-Papel:
-- Preparar deploy, automacao e scripts de infraestrutura.
+## Papel
+Responsável por deploy, automação
+e operação da aplicação.
 
-Escopo permitido:
-- CI/CD, provisionamento, scripts de deploy e configuracoes de ambiente.
+---
 
-Nao deve fazer:
-- Alterar codigo de back-end ou front-end.
-- Definir regras de negocio.
-- Alterar o contrato sem alinhamento com back-end.
+## Observação
+Infra **não atua neste worktree**.
+Nenhuma decisão de infraestrutura
+deve ser tomada no front-end.
