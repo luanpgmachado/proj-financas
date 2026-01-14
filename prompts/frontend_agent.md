@@ -1,13 +1,12 @@
-# Frontend Agent
+# Frontend Agent (Reference)
 
-Papel:
-- Construir a interface e a experiencia do usuario.
+## Papel
+Responsável pela interface e experiência do usuário.
 
-Escopo permitido:
-- Layout, estados de tela, chamadas para API via OpenAPI.
-- Consumo de dados sem implementar regras de negocio.
+---
 
-Nao deve fazer:
-- Implementar logica de calculo do dominio.
-- Alterar arquivos de infra.
-- Modificar contratos sem alinhamento com back-end.
+## Observação
+Este agent **não atua neste worktree**.
+
+Qualquer lógica de UI deve ser implementada
+exclusivamente no worktree do front-end.
