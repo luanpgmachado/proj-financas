@@ -27,8 +27,8 @@
 
 ## GET /lancamentos
 
-- Ordenacao: a listagem retorna os registros ordenados por `data` em ordem
-  decrescente, sem filtros ou paginacao no v1.
+- Listagem simples: retorna todos os registros persistidos no SQLite, sem
+  filtros, paginacao ou ordenacao no v1.
 
 ## GET /consolidacoes/mensal
 

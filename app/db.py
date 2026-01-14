@@ -114,7 +114,6 @@ def list_lancamentos() -> List[Dict[str, Any]]:
                 valor_total,
                 numero_parcelas
             FROM lancamentos
-            ORDER BY data DESC, id DESC
             """
         ).fetchall()
 

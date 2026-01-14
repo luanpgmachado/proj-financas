@@ -60,6 +60,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/LancamentoFinanceiro"
+        "500":
+          description: Erro inesperado.
   /consolidacoes/mensal:
     get:
       tags:
