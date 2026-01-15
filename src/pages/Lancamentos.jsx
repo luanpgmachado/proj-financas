@@ -9,29 +9,33 @@ import {
   resolveSchema
 } from "../utils/openapi";
 
-function buildFieldConfig(schema, doc) {
+function buildFieldConfig(schema, doc, options = {}) {
   const resolved = resolveSchema(schema, doc);
   if (!resolved || resolved.type !== "object") {
     return [];
   }
 
   const required = new Set(resolved.required || []);
-  return Object.entries(resolved.properties || {}).map(([name, definition]) => {
-    const fieldSchema = resolveSchema(definition, doc) || definition;
-    const type = fieldSchema?.type || "string";
-    const format = fieldSchema?.format;
-    const options = fieldSchema?.enum || null;
+  const omit = new Set(options.omit || []);
 
-    return {
-      name,
-      label: name,
-      type,
-      format,
-      options,
-      required: required.has(name),
-      isJson: type === "object" || type === "array"
-    };
-  });
+  return Object.entries(resolved.properties || {})
+    .filter(([name]) => !omit.has(name))
+    .map(([name, definition]) => {
+      const fieldSchema = resolveSchema(definition, doc) || definition;
+      const type = fieldSchema?.type || "string";
+      const format = fieldSchema?.format;
+      const optionsList = fieldSchema?.enum || null;
+
+      return {
+        name,
+        label: name,
+        type,
+        format,
+        options: optionsList,
+        required: required.has(name),
+        isJson: type === "object" || type === "array"
+      };
+    });
 }
 
 function resolveColumns(schema, doc) {
@@ -47,6 +51,73 @@ function resolveColumns(schema, doc) {
     return Object.keys(resolved.properties || {});
   }
   return [];
+}
+
+function getSchemaVariants(schema, doc) {
+  const resolved = resolveSchema(schema, doc);
+  if (!resolved || !resolved.oneOf) {
+    return null;
+  }
+
+  const propertyName = resolved.discriminator?.propertyName || null;
+  const mapping = resolved.discriminator?.mapping || {};
+  const options = [];
+
+  if (Object.keys(mapping).length > 0) {
+    Object.entries(mapping).forEach(([value, ref]) => {
+      const resolvedSchema = resolveSchema({ $ref: ref }, doc);
+      if (!resolvedSchema) {
+        return;
+      }
+      options.push({ value, schema: resolvedSchema });
+    });
+  } else {
+    resolved.oneOf.forEach((entry, index) => {
+      const resolvedSchema = resolveSchema(entry, doc) || entry;
+      if (!resolvedSchema) {
+        return;
+      }
+      let value = null;
+      if (propertyName) {
+        const propSchema =
+          resolveSchema(resolvedSchema?.properties?.[propertyName], doc) ||
+          resolvedSchema?.properties?.[propertyName];
+        if (propSchema?.enum?.length === 1) {
+          value = propSchema.enum[0];
+        }
+      }
+      options.push({
+        value: value || `opcao_${index + 1}`,
+        schema: resolvedSchema
+      });
+    });
+  }
+
+  if (options.length === 0) {
+    return null;
+  }
+
+  return { propertyName, options };
+}
+
+function formatValidationErrors(errorData) {
+  const detail = errorData?.detail;
+  if (!Array.isArray(detail)) {
+    return [];
+  }
+
+  return detail
+    .map((item) => {
+      const loc = Array.isArray(item.loc)
+        ? item.loc.join(".")
+        : typeof item.loc === "string"
+        ? item.loc
+        : "";
+      const cleanedLoc = loc.replace(/^body\./, "");
+      const message = item.msg || "Erro de validacao.";
+      return cleanedLoc ? `${cleanedLoc}: ${message}` : message;
+    })
+    .filter(Boolean);
 }
 
 export default function Lancamentos() {
@@ -92,7 +163,37 @@ export default function Lancamentos() {
       hint: "o formulario sera habilitado automaticamente."
     };
   }, [listReady, createReady]);
-  const fields = useMemo(() => buildFieldConfig(requestSchema, doc), [requestSchema, doc]);
+  const variantConfig = useMemo(
+    () => getSchemaVariants(requestSchema, doc),
+    [requestSchema, doc]
+  );
+  const variantOptions = variantConfig?.options || [];
+  const variantKey = useMemo(
+    () => variantOptions.map((option) => option.value).join("|"),
+    [variantOptions]
+  );
+  const [variantValue, setVariantValue] = useState("");
+  const hasVariants = variantOptions.length > 0;
+  const activeSchema = useMemo(() => {
+    if (!hasVariants) {
+      return requestSchema;
+    }
+    if (!variantValue) {
+      return null;
+    }
+    return (
+      variantOptions.find((option) => option.value === variantValue)?.schema || null
+    );
+  }, [hasVariants, requestSchema, variantValue, variantOptions]);
+  const fields = useMemo(() => {
+    if (hasVariants && !activeSchema) {
+      return [];
+    }
+    const omit = hasVariants && variantConfig?.propertyName
+      ? [variantConfig.propertyName]
+      : [];
+    return buildFieldConfig(activeSchema || requestSchema, doc, { omit });
+  }, [activeSchema, requestSchema, doc, hasVariants, variantConfig?.propertyName]);
   const schemaColumns = useMemo(
     () => resolveColumns(responseSchema, doc),
     [responseSchema, doc]
@@ -104,16 +205,43 @@ export default function Lancamentos() {
   const [fetchError, setFetchError] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
+  const [validationErrors, setValidationErrors] = useState([]);
   const [formValues, setFormValues] = useState({});
   const [refreshIndex, setRefreshIndex] = useState(0);
 
   useEffect(() => {
-    const initial = {};
-    fields.forEach((field) => {
-      initial[field.name] = field.type === "boolean" ? false : "";
+    if (fields.length === 0) {
+      setFormValues({});
+      return;
+    }
+    setFormValues((prev) => {
+      const next = {};
+      fields.forEach((field) => {
+        if (Object.prototype.hasOwnProperty.call(prev, field.name)) {
+          next[field.name] = prev[field.name];
+          return;
+        }
+        next[field.name] = field.type === "boolean" ? false : "";
+      });
+      return next;
     });
-    setFormValues(initial);
   }, [fields]);
+
+  useEffect(() => {
+    if (!hasVariants) {
+      setVariantValue("");
+      return;
+    }
+    setVariantValue((prev) => {
+      if (variantOptions.length === 1) {
+        return variantOptions[0].value;
+      }
+      if (variantOptions.some((option) => option.value === prev)) {
+        return prev;
+      }
+      return "";
+    });
+  }, [variantKey, hasVariants, variantOptions]);
 
   useEffect(() => {
     if (!canList) {
@@ -161,6 +289,7 @@ export default function Lancamentos() {
     event.preventDefault();
     setSubmitError("");
     setSubmitSuccess("");
+    setValidationErrors([]);
 
     if (!baseUrlConfigured) {
       setSubmitError("VITE_API_BASE_URL nao configurada no front-end.");
@@ -169,6 +298,11 @@ export default function Lancamentos() {
 
     if (!createReady) {
       setSubmitError("Endpoint POST /lancamentos nao definido no OpenAPI.");
+      return;
+    }
+
+    if (hasVariants && !variantValue) {
+      setSubmitError("Selecione o tipo_lancamento antes de enviar.");
       return;
     }
 
@@ -197,6 +331,9 @@ export default function Lancamentos() {
 
         payload[field.name] = rawValue;
       });
+      if (variantConfig?.propertyName && variantValue) {
+        payload[variantConfig.propertyName] = variantValue;
+      }
     } catch (error) {
       setSubmitError("JSON invalido em um dos campos.");
       return;
@@ -209,8 +346,17 @@ export default function Lancamentos() {
       });
       setSubmitSuccess("Lancamento criado com sucesso.");
       setSubmitError("");
+      setValidationErrors([]);
       setRefreshIndex((prev) => prev + 1);
     } catch (error) {
+      if (error?.status === 422) {
+        const errors = formatValidationErrors(error?.data);
+        setValidationErrors(errors);
+        setSubmitError("Erro de validacao retornado pela API.");
+        setSubmitSuccess("");
+        return;
+      }
+      setValidationErrors([]);
       setSubmitError("Nao foi possivel criar o lancamento.");
       setSubmitSuccess("");
     }
@@ -332,15 +478,42 @@ export default function Lancamentos() {
             </p>
           )}
 
-          {canCreate && fields.length === 0 && (
+          {canCreate && !hasVariants && fields.length === 0 && (
             <p className="mt-4 text-sm text-ink-soft">
               Nenhum campo disponivel. Publique o schema do POST /lancamentos no
               OpenAPI.
             </p>
           )}
 
-          {canCreate && fields.length > 0 && (
+          {canCreate && (hasVariants || fields.length > 0) && (
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+              {hasVariants && (
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-ink">
+                    {variantConfig?.propertyName || "tipo_lancamento"}
+                  </label>
+                  <select
+                    className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+                    value={variantValue}
+                    onChange={(event) => setVariantValue(event.target.value)}
+                    required
+                  >
+                    <option value="">Selecione</option>
+                    {variantOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.value}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {hasVariants && !variantValue && (
+                <p className="text-sm text-ink-soft">
+                  Selecione um tipo de lancamento para carregar os campos.
+                </p>
+              )}
+
               {fields.map((field) => (
                 <div key={field.name} className="space-y-2">
                   <label className="text-sm font-semibold text-ink">
@@ -408,6 +581,13 @@ export default function Lancamentos() {
               {submitError && (
                 <p className="text-sm font-semibold text-rose-600">{submitError}</p>
               )}
+              {validationErrors.length > 0 && (
+                <ul className="space-y-1 text-xs text-rose-600">
+                  {validationErrors.map((item, index) => (
+                    <li key={`${item}-${index}`}>{item}</li>
+                  ))}
+                </ul>
+              )}
               {submitSuccess && (
                 <p className="text-sm font-semibold text-emerald-600">
                   {submitSuccess}
@@ -417,7 +597,7 @@ export default function Lancamentos() {
               <button
                 type="submit"
                 className="w-full rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white transition hover:bg-ink/90"
-                disabled={!canCreate}
+                disabled={!canCreate || (hasVariants && !variantValue)}
               >
                 Salvar lancamento
               </button>
