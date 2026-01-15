@@ -1,0 +1,11 @@
+.venv/
+data/*.db
+__pycache__/
+*.pyc
+node_modules/
+dist/
+.vite/
+.env
+.env.local
+.env.*.local
+coverage/

@@ -22,10 +22,522 @@ tags:
   - name: autenticacao
     description: Autenticação e controle de acesso
 
-paths: {}
+paths:
+  /lancamentos:
+    post:
+      tags:
+        - financeiro
+      summary: Criar lancamento financeiro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LancamentoFinanceiroCreate"
+      responses:
+        "201":
+          description: Lancamento criado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LancamentoFinanceiro"
+        "422":
+          description: Erro de validacao do payload.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroValidacao"
+    get:
+      tags:
+        - financeiro
+      summary: Listar lancamentos financeiros
+      description: Retorna todos os lancamentos persistidos, sem filtros, paginacao ou ordenacao.
+      responses:
+        "200":
+          description: Lista de lancamentos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LancamentoFinanceiro"
+        "500":
+          description: Erro ao acessar banco.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroInterno"
+  /consolidacoes/mensal:
+    get:
+      tags:
+        - financeiro
+      summary: Consolidacao mensal de lancamentos
+      parameters:
+        - name: competencia
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/Competencia"
+      responses:
+        "200":
+          description: Consolidacao mensal.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsolidacaoMensal"
+        "422":
+          description: Erro de validacao do parametro.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErroValidacao"
 
 components:
-  schemas: {}
+  schemas:
+    UUID:
+      type: string
+      format: uuid
+      example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+
+    Data:
+      type: string
+      format: date
+      example: "2024-01-31"
+
+    Competencia:
+      type: string
+      pattern: "^\\d{4}-(0[1-9]|1[0-2])$"
+      example: "2024-01"
+
+    Money:
+      type: number
+      format: double
+      minimum: 0
+      example: 1234.56
+
+    Saldo:
+      type: number
+      format: double
+      example: -123.45
+
+    Usuario:
+      type: object
+      required:
+        - id
+        - nome
+        - email
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+          readOnly: true
+        nome:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+
+    Categoria:
+      type: object
+      description: Nome deve ser unico por usuario.
+      required:
+        - id
+        - nome
+        - usuario_id
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+          readOnly: true
+        nome:
+          type: string
+          minLength: 1
+        usuario_id:
+          $ref: "#/components/schemas/UUID"
+          readOnly: true
+
+    FormaPagamento:
+      type: object
+      description: Nome deve ser unico por usuario.
+      required:
+        - id
+        - nome
+        - usuario_id
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+          readOnly: true
+        nome:
+          type: string
+          minLength: 1
+        usuario_id:
+          $ref: "#/components/schemas/UUID"
+          readOnly: true
+
+    MetaFinanceira:
+      type: object
+      required:
+        - id
+        - nome
+        - valor_planejado
+        - competencia
+        - usuario_id
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+          readOnly: true
+        nome:
+          type: string
+          minLength: 1
+        valor_planejado:
+          $ref: "#/components/schemas/Money"
+        competencia:
+          $ref: "#/components/schemas/Competencia"
+        usuario_id:
+          $ref: "#/components/schemas/UUID"
+          readOnly: true
+
+    Investimento:
+      type: object
+      required:
+        - id
+        - tipo
+        - valor
+        - data
+        - usuario_id
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+          readOnly: true
+        tipo:
+          type: string
+          minLength: 1
+          example: renda_fixa
+        valor:
+          $ref: "#/components/schemas/Money"
+        data:
+          $ref: "#/components/schemas/Data"
+        usuario_id:
+          $ref: "#/components/schemas/UUID"
+          readOnly: true
+
+    TipoLancamento:
+      type: string
+      enum:
+        - ENTRADA
+        - FIXO
+        - VARIAVEL
+        - PARCELADO
+
+    LancamentoEntradaCreate:
+      type: object
+      required:
+        - nome
+        - data
+        - competencia
+        - tipo_lancamento
+        - valor
+      properties:
+        nome:
+          type: string
+          minLength: 1
+        data:
+          $ref: "#/components/schemas/Data"
+        competencia:
+          $ref: "#/components/schemas/Competencia"
+        tipo_lancamento:
+          type: string
+          enum:
+            - ENTRADA
+        valor:
+          $ref: "#/components/schemas/Money"
+
+    LancamentoFixoCreate:
+      type: object
+      required:
+        - nome
+        - data
+        - competencia
+        - tipo_lancamento
+        - categoria_id
+        - forma_pagamento_id
+        - valor
+        - pago
+      properties:
+        nome:
+          type: string
+          minLength: 1
+        data:
+          $ref: "#/components/schemas/Data"
+        competencia:
+          $ref: "#/components/schemas/Competencia"
+        tipo_lancamento:
+          type: string
+          enum:
+            - FIXO
+        categoria_id:
+          $ref: "#/components/schemas/UUID"
+        forma_pagamento_id:
+          $ref: "#/components/schemas/UUID"
+        valor:
+          $ref: "#/components/schemas/Money"
+        pago:
+          type: boolean
+
+    LancamentoVariavelCreate:
+      type: object
+      required:
+        - nome
+        - data
+        - competencia
+        - tipo_lancamento
+        - categoria_id
+        - forma_pagamento_id
+        - valor
+        - pago
+      properties:
+        nome:
+          type: string
+          minLength: 1
+        data:
+          $ref: "#/components/schemas/Data"
+        competencia:
+          $ref: "#/components/schemas/Competencia"
+        tipo_lancamento:
+          type: string
+          enum:
+            - VARIAVEL
+        categoria_id:
+          $ref: "#/components/schemas/UUID"
+        forma_pagamento_id:
+          $ref: "#/components/schemas/UUID"
+        valor:
+          $ref: "#/components/schemas/Money"
+        pago:
+          type: boolean
+
+    LancamentoParceladoCreate:
+      type: object
+      required:
+        - nome
+        - data
+        - competencia
+        - tipo_lancamento
+        - categoria_id
+        - forma_pagamento_id
+        - valor_total
+        - numero_parcelas
+      properties:
+        nome:
+          type: string
+          minLength: 1
+        data:
+          $ref: "#/components/schemas/Data"
+        competencia:
+          $ref: "#/components/schemas/Competencia"
+        tipo_lancamento:
+          type: string
+          enum:
+            - PARCELADO
+        categoria_id:
+          $ref: "#/components/schemas/UUID"
+        forma_pagamento_id:
+          $ref: "#/components/schemas/UUID"
+        valor_total:
+          $ref: "#/components/schemas/Money"
+        numero_parcelas:
+          type: integer
+          minimum: 1
+
+    LancamentoFinanceiroCreate:
+      oneOf:
+        - $ref: "#/components/schemas/LancamentoEntradaCreate"
+        - $ref: "#/components/schemas/LancamentoFixoCreate"
+        - $ref: "#/components/schemas/LancamentoVariavelCreate"
+        - $ref: "#/components/schemas/LancamentoParceladoCreate"
+      discriminator:
+        propertyName: tipo_lancamento
+        mapping:
+          ENTRADA: "#/components/schemas/LancamentoEntradaCreate"
+          FIXO: "#/components/schemas/LancamentoFixoCreate"
+          VARIAVEL: "#/components/schemas/LancamentoVariavelCreate"
+          PARCELADO: "#/components/schemas/LancamentoParceladoCreate"
+
+    LancamentoBase:
+      type: object
+      required:
+        - id
+        - nome
+        - data
+        - competencia
+        - tipo_lancamento
+        - usuario_id
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+          readOnly: true
+        nome:
+          type: string
+          minLength: 1
+        data:
+          $ref: "#/components/schemas/Data"
+        competencia:
+          $ref: "#/components/schemas/Competencia"
+        tipo_lancamento:
+          $ref: "#/components/schemas/TipoLancamento"
+        usuario_id:
+          $ref: "#/components/schemas/UUID"
+          readOnly: true
+
+    LancamentoGastoBase:
+      allOf:
+        - $ref: "#/components/schemas/LancamentoBase"
+        - type: object
+          required:
+            - categoria_id
+            - forma_pagamento_id
+          properties:
+            categoria_id:
+              $ref: "#/components/schemas/UUID"
+            forma_pagamento_id:
+              $ref: "#/components/schemas/UUID"
+
+    LancamentoEntrada:
+      description: Entrada financeira sem categoria ou forma de pagamento.
+      allOf:
+        - $ref: "#/components/schemas/LancamentoBase"
+        - type: object
+          required:
+            - valor
+          properties:
+            valor:
+              $ref: "#/components/schemas/Money"
+
+    LancamentoFixo:
+      allOf:
+        - $ref: "#/components/schemas/LancamentoGastoBase"
+        - type: object
+          required:
+            - valor
+            - pago
+          properties:
+            valor:
+              $ref: "#/components/schemas/Money"
+            pago:
+              type: boolean
+
+    LancamentoVariavel:
+      allOf:
+        - $ref: "#/components/schemas/LancamentoGastoBase"
+        - type: object
+          required:
+            - valor
+            - pago
+          properties:
+            valor:
+              $ref: "#/components/schemas/Money"
+            pago:
+              type: boolean
+
+    LancamentoParcelado:
+      description: Parcelado deriva parcelas mensais para calculo.
+      allOf:
+        - $ref: "#/components/schemas/LancamentoGastoBase"
+        - type: object
+          required:
+            - valor_total
+            - numero_parcelas
+          properties:
+            valor_total:
+              $ref: "#/components/schemas/Money"
+            numero_parcelas:
+              type: integer
+              minimum: 1
+
+    LancamentoFinanceiro:
+      oneOf:
+        - $ref: "#/components/schemas/LancamentoEntrada"
+        - $ref: "#/components/schemas/LancamentoFixo"
+        - $ref: "#/components/schemas/LancamentoVariavel"
+        - $ref: "#/components/schemas/LancamentoParcelado"
+      discriminator:
+        propertyName: tipo_lancamento
+        mapping:
+          ENTRADA: "#/components/schemas/LancamentoEntrada"
+          FIXO: "#/components/schemas/LancamentoFixo"
+          VARIAVEL: "#/components/schemas/LancamentoVariavel"
+          PARCELADO: "#/components/schemas/LancamentoParcelado"
+
+    ConsolidacaoMensal:
+      type: object
+      required:
+        - competencia
+        - total_entradas
+        - total_gastos
+        - total_investimentos
+        - saldo
+      properties:
+        competencia:
+          $ref: "#/components/schemas/Competencia"
+        total_entradas:
+          $ref: "#/components/schemas/Money"
+        total_gastos:
+          $ref: "#/components/schemas/Money"
+        total_investimentos:
+          $ref: "#/components/schemas/Money"
+        saldo:
+          $ref: "#/components/schemas/Saldo"
+
+    PanoramaAnual:
+      type: object
+      required:
+        - ano
+        - resumos
+      properties:
+        ano:
+          type: integer
+          example: 2024
+        resumos:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConsolidacaoMensal"
+
+    ErroValidacaoItem:
+      type: object
+      required:
+        - loc
+        - msg
+        - type
+      properties:
+        loc:
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - type: integer
+        msg:
+          type: string
+        type:
+          type: string
+      additionalProperties: true
+
+    ErroValidacao:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: array
+          items:
+            $ref: "#/components/schemas/ErroValidacaoItem"
+
+    ErroInterno:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          example: erro ao acessar banco
   parameters: {}
   responses: {}
   securitySchemes: {}
