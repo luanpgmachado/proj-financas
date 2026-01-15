@@ -24,11 +24,13 @@ O front-end consome exclusivamente o contrato OpenAPI definido em `contracts/ope
 
 ## Como rodar
 
-Configure a variavel obrigatoria `VITE_API_BASE_URL` (ex: backend local na
-porta 8000). Copie `.env.example` para `.env` e ajuste se necessario:
+Configure a variavel obrigatoria `VITE_API_BASE_URL`. Em desenvolvimento,
+use `/api` para ativar o proxy do Vite para o backend local. Copie
+`.env.example` para `.env` e ajuste se necessario:
 
 ```bash
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL=/api
+API_PROXY_TARGET=http://localhost:8000
 ```
 
 ```bash
@@ -54,6 +56,8 @@ npm run preview
   endpoint `/lancamentos` estiver definido no OpenAPI.
 - O front-end exige `VITE_API_BASE_URL` para falar com o backend. O `servers`
   do OpenAPI e apenas referencia conceitual (nao define ambiente real).
+- Em dev, o Vite faz proxy de `VITE_API_BASE_URL` para `API_PROXY_TARGET`,
+  evitando problemas de CORS.
 - Autenticacao e simulada no v1 para controlar o fluxo de telas.
 
 ## Branch de Integracao (integration/v1)
