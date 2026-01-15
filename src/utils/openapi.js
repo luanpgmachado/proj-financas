@@ -16,7 +16,7 @@ export function getOpenApiDocument() {
 }
 
 export function getBaseUrl(doc) {
-  const envBaseUrl = import.meta?.env?.VITE_API_BASE_URL;
+  const envBaseUrl = import.meta.env.VITE_API_BASE_URL;
   const normalized = envBaseUrl?.trim();
   if (!normalized) {
     return null;
