@@ -174,12 +174,13 @@ A V1 só é considerada pronta quando:
 - Validação manual realizada na integration/v1
 
 ===============================================================================
-PRÓXIMO PASSO IMEDIATO
+EXECUÇÃO DE TAREFAS
 ===============================================================================
 
-Executar a issue:
-- DEV-5 — Expor endpoint GET /lancamentos
-- Agent responsável: backend
-- Branch: integration/v1
+A issue a ser executada, o agent responsável e a branch ativa
+SERÃO SEMPRE informados explicitamente no prompt do chat.
+
+Este arquivo NÃO define ordem de execução de issues.
+
 
 FIM DO CONTEXTO
