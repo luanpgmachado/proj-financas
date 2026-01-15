@@ -17,8 +17,11 @@ export function getOpenApiDocument() {
 
 export function getBaseUrl(doc) {
   const envBaseUrl = import.meta?.env?.VITE_API_BASE_URL;
-  const baseUrl = envBaseUrl || doc?.servers?.[0]?.url || "http://localhost";
-  return baseUrl.replace(/\/$/, "");
+  const normalized = envBaseUrl?.trim();
+  if (!normalized) {
+    return null;
+  }
+  return normalized.replace(/\/$/, "");
 }
 
 export function hasPath(doc, path) {

@@ -24,6 +24,13 @@ O front-end consome exclusivamente o contrato OpenAPI definido em `contracts/ope
 
 ## Como rodar
 
+Configure a variavel obrigatoria `VITE_API_BASE_URL` (ex: backend local na
+porta 8000). Copie `.env.example` para `.env` e ajuste se necessario:
+
+```bash
+VITE_API_BASE_URL=http://localhost:8000
+```
+
 ```bash
 npm install
 npm run dev
@@ -45,6 +52,8 @@ npm run preview
 
 - A tela de Lancamentos habilita listagem e formulario somente quando o
   endpoint `/lancamentos` estiver definido no OpenAPI.
+- O front-end exige `VITE_API_BASE_URL` para falar com o backend. O `servers`
+  do OpenAPI e apenas referencia conceitual (nao define ambiente real).
 - Autenticacao e simulada no v1 para controlar o fluxo de telas.
 
 ## Branch de Integracao (integration/v1)

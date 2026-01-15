@@ -52,6 +52,7 @@ function resolveColumns(schema, doc) {
 export default function Lancamentos() {
   const doc = useMemo(() => getOpenApiDocument(), []);
   const baseUrl = useMemo(() => getBaseUrl(doc), [doc]);
+  const baseUrlConfigured = Boolean(baseUrl);
   const requestSchema = useMemo(
     () => getRequestSchema(doc, "/lancamentos", "post"),
     [doc]
@@ -68,6 +69,8 @@ export default function Lancamentos() {
     () => Boolean(getOperation(doc, "/lancamentos", "post")),
     [doc]
   );
+  const canList = baseUrlConfigured && listReady;
+  const canCreate = baseUrlConfigured && createReady;
   const missingInfo = useMemo(() => {
     if (listReady && createReady) {
       return null;
@@ -113,7 +116,7 @@ export default function Lancamentos() {
   }, [fields]);
 
   useEffect(() => {
-    if (!listReady) {
+    if (!canList) {
       return;
     }
 
@@ -148,7 +151,7 @@ export default function Lancamentos() {
     };
 
     load();
-  }, [baseUrl, listReady, refreshIndex]);
+  }, [baseUrl, canList, refreshIndex]);
 
   const handleChange = (name, value) => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
@@ -158,6 +161,11 @@ export default function Lancamentos() {
     event.preventDefault();
     setSubmitError("");
     setSubmitSuccess("");
+
+    if (!baseUrlConfigured) {
+      setSubmitError("VITE_API_BASE_URL nao configurada no front-end.");
+      return;
+    }
 
     if (!createReady) {
       setSubmitError("Endpoint POST /lancamentos nao definido no OpenAPI.");
@@ -224,6 +232,14 @@ export default function Lancamentos() {
         </p>
       </div>
 
+      {!baseUrlConfigured && (
+        <div className="surface border border-rose-200 bg-rose-50/80 p-6 text-sm text-ink-soft">
+          Defina a variavel <strong>VITE_API_BASE_URL</strong> para conectar o
+          front-end ao backend (ex: <strong>http://localhost:8000</strong>) e
+          reinicie o servidor do Vite.
+        </div>
+      )}
+
       {missingInfo && (
         <div className="surface border border-amber-200 bg-amber-50/80 p-6 text-sm text-ink-soft">
           O contrato `contracts/openapi.v1.yaml` ainda nao define{" "}
@@ -236,33 +252,39 @@ export default function Lancamentos() {
           <div className="flex items-center justify-between">
             <h2 className="section-title">Listagem</h2>
             <span className="rounded-full bg-ink/10 px-3 py-1 text-xs font-semibold text-ink-soft">
-              {baseUrl}
+              {baseUrl || "VITE_API_BASE_URL nao configurada"}
             </span>
           </div>
-          {!listReady && (
+          {!baseUrlConfigured && (
+            <p className="mt-4 text-sm text-ink-soft">
+              Configure a variavel VITE_API_BASE_URL para habilitar a listagem.
+            </p>
+          )}
+
+          {baseUrlConfigured && !listReady && (
             <p className="mt-4 text-sm text-ink-soft">
               Endpoint GET /lancamentos nao definido no OpenAPI.
             </p>
           )}
 
-          {listReady && loading && (
+          {canList && loading && (
             <p className="mt-4 text-sm text-ink-soft">Carregando...</p>
           )}
-          {listReady && fetchError && (
+          {canList && fetchError && (
             <p className="mt-4 text-sm text-rose-600">{fetchError}</p>
           )}
 
-          {listReady && !loading && !fetchError && rows.length === 0 && !rawResponse && (
+          {canList && !loading && !fetchError && rows.length === 0 && !rawResponse && (
             <p className="mt-4 text-sm text-ink-soft">Nenhum lancamento exibido.</p>
           )}
 
-          {listReady && rawResponse && (
+          {canList && rawResponse && (
             <pre className="mt-4 overflow-x-auto rounded-2xl bg-ink/5 p-4 text-xs text-ink">
               {JSON.stringify(rawResponse, null, 2)}
             </pre>
           )}
 
-          {listReady && rows.length > 0 && (
+          {canList && rows.length > 0 && (
             <div className="mt-4 overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
@@ -298,20 +320,26 @@ export default function Lancamentos() {
             Campos gerados a partir do contrato OpenAPI.
           </p>
 
-          {!createReady && (
+          {!baseUrlConfigured && (
+            <p className="mt-4 text-sm text-ink-soft">
+              Configure a variavel VITE_API_BASE_URL para habilitar o formulario.
+            </p>
+          )}
+
+          {baseUrlConfigured && !createReady && (
             <p className="mt-4 text-sm text-ink-soft">
               Endpoint POST /lancamentos nao definido no OpenAPI.
             </p>
           )}
 
-          {createReady && fields.length === 0 && (
+          {canCreate && fields.length === 0 && (
             <p className="mt-4 text-sm text-ink-soft">
               Nenhum campo disponivel. Publique o schema do POST /lancamentos no
               OpenAPI.
             </p>
           )}
 
-          {createReady && fields.length > 0 && (
+          {canCreate && fields.length > 0 && (
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               {fields.map((field) => (
                 <div key={field.name} className="space-y-2">
@@ -389,7 +417,7 @@ export default function Lancamentos() {
               <button
                 type="submit"
                 className="w-full rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white transition hover:bg-ink/90"
-                disabled={!createReady}
+                disabled={!canCreate}
               >
                 Salvar lancamento
               </button>
