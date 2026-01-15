@@ -3,9 +3,9 @@ import { apiRequest } from "../services/api";
 import {
   getBaseUrl,
   getOpenApiDocument,
+  getOperation,
   getRequestSchema,
   getResponseSchema,
-  hasPath,
   resolveSchema
 } from "../utils/openapi";
 
@@ -52,7 +52,6 @@ function resolveColumns(schema, doc) {
 export default function Lancamentos() {
   const doc = useMemo(() => getOpenApiDocument(), []);
   const baseUrl = useMemo(() => getBaseUrl(doc), [doc]);
-  const endpointReady = useMemo(() => hasPath(doc, "/lancamentos"), [doc]);
   const requestSchema = useMemo(
     () => getRequestSchema(doc, "/lancamentos", "post"),
     [doc]
@@ -61,6 +60,35 @@ export default function Lancamentos() {
     () => getResponseSchema(doc, "/lancamentos", "get"),
     [doc]
   );
+  const listReady = useMemo(
+    () => Boolean(getOperation(doc, "/lancamentos", "get")),
+    [doc]
+  );
+  const createReady = useMemo(
+    () => Boolean(getOperation(doc, "/lancamentos", "post")),
+    [doc]
+  );
+  const missingInfo = useMemo(() => {
+    if (listReady && createReady) {
+      return null;
+    }
+    if (!listReady && !createReady) {
+      return {
+        endpoints: "GET /lancamentos e POST /lancamentos",
+        hint: "a listagem e o formulario serao habilitados automaticamente."
+      };
+    }
+    if (!listReady) {
+      return {
+        endpoints: "GET /lancamentos",
+        hint: "a listagem sera habilitada automaticamente."
+      };
+    }
+    return {
+      endpoints: "POST /lancamentos",
+      hint: "o formulario sera habilitado automaticamente."
+    };
+  }, [listReady, createReady]);
   const fields = useMemo(() => buildFieldConfig(requestSchema, doc), [requestSchema, doc]);
   const schemaColumns = useMemo(
     () => resolveColumns(responseSchema, doc),
@@ -85,7 +113,7 @@ export default function Lancamentos() {
   }, [fields]);
 
   useEffect(() => {
-    if (!endpointReady) {
+    if (!listReady) {
       return;
     }
 
@@ -120,7 +148,7 @@ export default function Lancamentos() {
     };
 
     load();
-  }, [baseUrl, endpointReady, refreshIndex]);
+  }, [baseUrl, listReady, refreshIndex]);
 
   const handleChange = (name, value) => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
@@ -131,8 +159,8 @@ export default function Lancamentos() {
     setSubmitError("");
     setSubmitSuccess("");
 
-    if (!endpointReady) {
-      setSubmitError("Endpoint /lancamentos nao definido no OpenAPI.");
+    if (!createReady) {
+      setSubmitError("Endpoint POST /lancamentos nao definido no OpenAPI.");
       return;
     }
 
@@ -196,11 +224,10 @@ export default function Lancamentos() {
         </p>
       </div>
 
-      {!endpointReady && (
+      {missingInfo && (
         <div className="surface border border-amber-200 bg-amber-50/80 p-6 text-sm text-ink-soft">
-          O contrato `contracts/openapi.v1.yaml` ainda nao define o endpoint
-          /lancamentos. Assim que ele for publicado, a listagem e o formulario
-          serao habilitados automaticamente.
+          O contrato `contracts/openapi.v1.yaml` ainda nao define{" "}
+          {missingInfo.endpoints}. Assim que isso acontecer, {missingInfo.hint}
         </div>
       )}
 
@@ -212,20 +239,30 @@ export default function Lancamentos() {
               {baseUrl}
             </span>
           </div>
-          {loading && <p className="mt-4 text-sm text-ink-soft">Carregando...</p>}
-          {fetchError && <p className="mt-4 text-sm text-rose-600">{fetchError}</p>}
+          {!listReady && (
+            <p className="mt-4 text-sm text-ink-soft">
+              Endpoint GET /lancamentos nao definido no OpenAPI.
+            </p>
+          )}
 
-          {!loading && !fetchError && rows.length === 0 && !rawResponse && (
+          {listReady && loading && (
+            <p className="mt-4 text-sm text-ink-soft">Carregando...</p>
+          )}
+          {listReady && fetchError && (
+            <p className="mt-4 text-sm text-rose-600">{fetchError}</p>
+          )}
+
+          {listReady && !loading && !fetchError && rows.length === 0 && !rawResponse && (
             <p className="mt-4 text-sm text-ink-soft">Nenhum lancamento exibido.</p>
           )}
 
-          {rawResponse && (
+          {listReady && rawResponse && (
             <pre className="mt-4 overflow-x-auto rounded-2xl bg-ink/5 p-4 text-xs text-ink">
               {JSON.stringify(rawResponse, null, 2)}
             </pre>
           )}
 
-          {rows.length > 0 && (
+          {listReady && rows.length > 0 && (
             <div className="mt-4 overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
@@ -261,14 +298,20 @@ export default function Lancamentos() {
             Campos gerados a partir do contrato OpenAPI.
           </p>
 
-          {fields.length === 0 && (
+          {!createReady && (
+            <p className="mt-4 text-sm text-ink-soft">
+              Endpoint POST /lancamentos nao definido no OpenAPI.
+            </p>
+          )}
+
+          {createReady && fields.length === 0 && (
             <p className="mt-4 text-sm text-ink-soft">
               Nenhum campo disponivel. Publique o schema do POST /lancamentos no
               OpenAPI.
             </p>
           )}
 
-          {fields.length > 0 && (
+          {createReady && fields.length > 0 && (
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               {fields.map((field) => (
                 <div key={field.name} className="space-y-2">
@@ -346,7 +389,7 @@ export default function Lancamentos() {
               <button
                 type="submit"
                 className="w-full rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white transition hover:bg-ink/90"
-                disabled={!endpointReady}
+                disabled={!createReady}
               >
                 Salvar lancamento
               </button>
