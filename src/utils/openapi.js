@@ -1,5 +1,5 @@
 import yaml from "yaml";
-import openapiRaw from "../../contracts/openapi.v1.yaml?raw";
+import openapiRaw from "../../contracts/openapi.v2.yaml?raw";
 
 let cachedDoc = null;
 
