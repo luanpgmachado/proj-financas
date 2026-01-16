@@ -70,34 +70,34 @@ function formatValidationErrors(errorData) {
     .filter(Boolean);
 }
 
-export default function Categorias() {
+export default function FormasPagamento() {
   const doc = useMemo(() => getOpenApiDocument(), []);
   const baseUrl = useMemo(() => getBaseUrl(doc), [doc]);
   const baseUrlConfigured = Boolean(baseUrl);
 
   const listReady = useMemo(
-    () => Boolean(getOperation(doc, "/categorias", "get")),
+    () => Boolean(getOperation(doc, "/formas-pagamento", "get")),
     [doc]
   );
   const createReady = useMemo(
-    () => Boolean(getOperation(doc, "/categorias", "post")),
+    () => Boolean(getOperation(doc, "/formas-pagamento", "post")),
     [doc]
   );
   const updateReady = useMemo(
-    () => Boolean(getOperation(doc, "/categorias/{categoria_id}", "put")),
+    () => Boolean(getOperation(doc, "/formas-pagamento/{forma_pagamento_id}", "put")),
     [doc]
   );
   const deleteReady = useMemo(
-    () => Boolean(getOperation(doc, "/categorias/{categoria_id}", "delete")),
+    () => Boolean(getOperation(doc, "/formas-pagamento/{forma_pagamento_id}", "delete")),
     [doc]
   );
 
   const requestSchema = useMemo(
-    () => getRequestSchema(doc, "/categorias", "post"),
+    () => getRequestSchema(doc, "/formas-pagamento", "post"),
     [doc]
   );
   const responseSchema = useMemo(
-    () => getResponseSchema(doc, "/categorias", "get"),
+    () => getResponseSchema(doc, "/formas-pagamento", "get"),
     [doc]
   );
   const fields = useMemo(() => buildFieldConfig(requestSchema, doc), [requestSchema, doc]);
@@ -145,7 +145,7 @@ export default function Categorias() {
       setFetchError("");
       setRawResponse(null);
       try {
-        const data = await apiRequest(baseUrl, "/categorias", { method: "GET" });
+        const data = await apiRequest(baseUrl, "/formas-pagamento", { method: "GET" });
         if (Array.isArray(data)) {
           setRows(data);
           setRawResponse(null);
@@ -159,7 +159,7 @@ export default function Categorias() {
         setRows([]);
         setRawResponse(data || null);
       } catch (error) {
-        setFetchError("Nao foi possivel carregar as categorias.");
+        setFetchError("Nao foi possivel carregar as formas de pagamento.");
       } finally {
         setLoading(false);
       }
@@ -172,15 +172,15 @@ export default function Categorias() {
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleEdit = (categoria) => {
-    setEditingId(categoria.id || "");
+  const handleEdit = (forma) => {
+    setEditingId(forma.id || "");
     setSubmitError("");
     setSubmitSuccess("");
     setValidationErrors([]);
     setFormValues((prev) => {
       const next = { ...prev };
       fields.forEach((field) => {
-        next[field.name] = categoria[field.name] ?? "";
+        next[field.name] = forma[field.name] ?? "";
       });
       return next;
     });
@@ -200,19 +200,19 @@ export default function Categorias() {
     });
   };
 
-  const handleDelete = async (categoriaId) => {
+  const handleDelete = async (formaId) => {
     if (!baseUrlConfigured || !deleteReady) {
       return;
     }
     setSubmitError("");
     setSubmitSuccess("");
     try {
-      await apiRequest(baseUrl, `/categorias/${categoriaId}`, { method: "DELETE" });
-      setSubmitSuccess("Categoria removida com sucesso.");
+      await apiRequest(baseUrl, `/formas-pagamento/${formaId}`, { method: "DELETE" });
+      setSubmitSuccess("Forma de pagamento removida com sucesso.");
       setRefreshIndex((prev) => prev + 1);
     } catch (error) {
       const detail = error?.data?.detail;
-      setSubmitError(detail || "Nao foi possivel remover a categoria.");
+      setSubmitError(detail || "Nao foi possivel remover a forma de pagamento.");
     }
   };
 
@@ -228,17 +228,17 @@ export default function Categorias() {
     }
 
     if (!createReady && !updateReady) {
-      setSubmitError("Endpoints de categorias nao definidos no OpenAPI.");
+      setSubmitError("Endpoints de formas de pagamento nao definidos no OpenAPI.");
       return;
     }
 
     const isEditing = Boolean(editingId);
     if (isEditing && !updateReady) {
-      setSubmitError("Endpoint PUT /categorias/{categoria_id} nao definido no OpenAPI.");
+      setSubmitError("Endpoint PUT /formas-pagamento/{forma_pagamento_id} nao definido.");
       return;
     }
     if (!isEditing && !createReady) {
-      setSubmitError("Endpoint POST /categorias nao definido no OpenAPI.");
+      setSubmitError("Endpoint POST /formas-pagamento nao definido no OpenAPI.");
       return;
     }
 
@@ -269,13 +269,15 @@ export default function Categorias() {
     }
 
     try {
-      const endpoint = isEditing ? `/categorias/${editingId}` : "/categorias";
+      const endpoint = isEditing
+        ? `/formas-pagamento/${editingId}`
+        : "/formas-pagamento";
       const method = isEditing ? "PUT" : "POST";
       await apiRequest(baseUrl, endpoint, {
         method,
         body: JSON.stringify(payload)
       });
-      setSubmitSuccess(isEditing ? "Categoria atualizada." : "Categoria criada.");
+      setSubmitSuccess(isEditing ? "Forma atualizada." : "Forma de pagamento criada.");
       setRefreshIndex((prev) => prev + 1);
       if (isEditing) {
         setEditingId("");
@@ -295,7 +297,7 @@ export default function Categorias() {
         return;
       }
       const detail = error?.data?.detail;
-      setSubmitError(detail || "Nao foi possivel salvar a categoria.");
+      setSubmitError(detail || "Nao foi possivel salvar a forma de pagamento.");
     }
   };
 
@@ -307,11 +309,11 @@ export default function Categorias() {
     <div className="space-y-8">
       <div>
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-ink-soft">
-          Categorias
+          Formas de pagamento
         </p>
-        <h1 className="mt-2 text-3xl font-semibold">Base de categorias</h1>
+        <h1 className="mt-2 text-3xl font-semibold">Formas cadastradas</h1>
         <p className="mt-2 text-base text-ink-soft">
-          CRUD integrado a API V2, guiado pelo contrato OpenAPI.
+          CRUD integrado a API V2, sem logica de negocio no front-end.
         </p>
       </div>
 
@@ -325,7 +327,7 @@ export default function Categorias() {
 
       {!listReady && (
         <div className="surface border border-amber-200 bg-amber-50/80 p-6 text-sm text-ink-soft">
-          Endpoint GET /categorias nao definido no OpenAPI.
+          Endpoint GET /formas-pagamento nao definido no OpenAPI.
         </div>
       )}
 
@@ -346,7 +348,7 @@ export default function Categorias() {
           )}
 
           {baseUrlConfigured && listReady && !loading && !fetchError && rows.length === 0 && (
-            <p className="mt-4 text-sm text-ink-soft">Nenhuma categoria exibida.</p>
+            <p className="mt-4 text-sm text-ink-soft">Nenhuma forma exibida.</p>
           )}
 
           {baseUrlConfigured && listReady && rawResponse && (
@@ -406,14 +408,16 @@ export default function Categorias() {
         </div>
 
         <div className="surface p-6">
-          <h2 className="section-title">{editingId ? "Editar categoria" : "Nova categoria"}</h2>
+          <h2 className="section-title">
+            {editingId ? "Editar forma de pagamento" : "Nova forma de pagamento"}
+          </h2>
           <p className="mt-2 text-sm text-ink-soft">
             Campos gerados a partir do contrato OpenAPI.
           </p>
 
           {!createReady && !updateReady && (
             <p className="mt-4 text-sm text-ink-soft">
-              Endpoints de categorias nao definidos no OpenAPI.
+              Endpoints de formas de pagamento nao definidos no OpenAPI.
             </p>
           )}
 
@@ -489,7 +493,7 @@ export default function Categorias() {
                   className="w-full rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white transition hover:bg-ink/90"
                   disabled={!baseUrlConfigured}
                 >
-                  {editingId ? "Salvar alteracoes" : "Criar categoria"}
+                  {editingId ? "Salvar alteracoes" : "Criar forma de pagamento"}
                 </button>
                 {editingId && (
                   <button
