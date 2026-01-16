@@ -22,7 +22,7 @@
 - Restricao `UNIQUE(usuario_id, nome)` para garantir unicidade.
 
 ## Testes
-- Nao executados (sugerido: `python -m pytest`)
+- `python -m pytest` (4 testes OK)
 
 ## Observacoes
 - Usuario segue simulado por `MOCK_USER_ID`.
