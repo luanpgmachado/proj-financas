@@ -9,7 +9,7 @@
 - Conexao SQLite agora fecha e confirma transacoes ao final do uso.
 
 ## Testes
-- Nao executados (sugerido: `python -m unittest discover -s tests -v`)
+- `python -m unittest discover -s tests -v` (1 teste OK)
 
 ## Observacoes
 - Nenhuma.
