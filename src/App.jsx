@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Lancamentos from "./pages/Lancamentos";
 import Categorias from "./pages/Categorias";
+import FormasPagamento from "./pages/FormasPagamento";
 import Investimentos from "./pages/Investimentos";
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/lancamentos" element={<Lancamentos />} />
           <Route path="/categorias" element={<Categorias />} />
+          <Route path="/formas-pagamento" element={<FormasPagamento />} />
           <Route path="/investimentos" element={<Investimentos />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

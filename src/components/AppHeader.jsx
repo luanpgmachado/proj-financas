@@ -5,6 +5,7 @@ const navItems = [
   { label: "Dashboard", to: "/dashboard" },
   { label: "Lancamentos", to: "/lancamentos" },
   { label: "Categorias", to: "/categorias" },
+  { label: "Formas", to: "/formas-pagamento" },
   { label: "Investimentos", to: "/investimentos" }
 ];
 

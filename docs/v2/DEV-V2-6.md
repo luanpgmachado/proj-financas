@@ -1,13 +1,15 @@
 # DEV-V2-6 - frontend/v2-formas-pagamento-crud
 
 ## Escopo entregue
-- TODO: descrever o que foi implementado.
+- CRUD de formas de pagamento com `/formas-pagamento`.
+- Tela com listagem, criacao, edicao e remocao.
+- Tratamento de erros 422 e 404 retornados pela API.
 
 ## Ajustes tecnicos
-- TODO: descrever ajustes tecnicos relevantes.
+- Inclusao da rota `/formas-pagamento` no front-end.
 
 ## Testes
-- TODO: informar comandos de testes e resultados.
+- Teste manual via `npm run dev` e chamadas reais no backend.
 
 ## Observacoes
-- TODO: pendencias ou limites.
+- Sem logica de negocio no front-end.
