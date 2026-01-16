@@ -1,13 +1,15 @@
 # DEV-V2-5 - frontend/v2-categorias-crud
 
 ## Escopo entregue
-- TODO: descrever o que foi implementado.
+- CRUD de categorias consumindo `/categorias` e `/categorias/{categoria_id}`.
+- Formulario guiado pelo contrato OpenAPI V2.
+- Tratamento de erros 422 e 404 conforme API.
 
 ## Ajustes tecnicos
-- TODO: descrever ajustes tecnicos relevantes.
+- Front-end passou a ler `contracts/openapi.v2.yaml`.
 
 ## Testes
-- TODO: informar comandos de testes e resultados.
+- Teste manual via `npm run dev` e chamadas reais no backend.
 
 ## Observacoes
-- TODO: pendencias ou limites.
+- Sem logica de negocio no front-end.
