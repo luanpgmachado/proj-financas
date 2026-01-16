@@ -1,13 +1,14 @@
 # DEV-V2-8 - frontend/v2-validacao-ponta-a-ponta
 
 ## Escopo entregue
-- TODO: descrever o que foi implementado.
+- Propagacao de erros 422/404 nos formularios de categorias, formas e lancamentos.
+- Mensagens de erro exibidas com `detail` retornado pela API quando aplicavel.
 
 ## Ajustes tecnicos
-- TODO: descrever ajustes tecnicos relevantes.
+- Reuso das mensagens de validacao no fluxo V2.
 
 ## Testes
-- TODO: informar comandos de testes e resultados.
+- Validacao manual via `npm run dev` com respostas 422/404 simuladas.
 
 ## Observacoes
-- TODO: pendencias ou limites.
+- Nenhuma regra de negocio foi adicionada ao front-end.
