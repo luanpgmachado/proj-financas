@@ -465,7 +465,7 @@ export default function Lancamentos() {
 
       {missingInfo && (
         <div className="surface border border-amber-200 bg-amber-50/80 p-6 text-sm text-ink-soft">
-          O contrato `contracts/openapi.v1.yaml` ainda nao define{" "}
+          O contrato `contracts/openapi.v2.yaml` ainda nao define{" "}
           {missingInfo.endpoints}. Assim que isso acontecer, {missingInfo.hint}
         </div>
       )}
