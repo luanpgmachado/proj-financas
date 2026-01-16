@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -13,8 +14,17 @@ def _ensure_db_path() -> None:
     Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
 
 
+@contextmanager
 def get_connection() -> sqlite3.Connection:
-    return sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def init_db() -> None:
@@ -40,11 +50,21 @@ def init_db() -> None:
         )
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS categorias (
+                id TEXT PRIMARY KEY,
+                usuario_id TEXT NOT NULL,
+                nome TEXT NOT NULL,
+                UNIQUE (usuario_id, nome)
+            )
+            """
+        )
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS formas_pagamento (
                 id TEXT PRIMARY KEY,
                 usuario_id TEXT NOT NULL,
                 nome TEXT NOT NULL,
-                UNIQUE(usuario_id, nome)
+                UNIQUE (usuario_id, nome)
             )
             """
         )
@@ -155,6 +175,85 @@ def list_lancamentos() -> List[Dict[str, Any]]:
         itens.append(item)
 
     return itens
+
+
+def insert_categoria(categoria: Dict[str, Any]) -> None:
+    payload = {
+        "id": categoria["id"],
+        "usuario_id": categoria["usuario_id"],
+        "nome": categoria["nome"],
+    }
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO categorias (id, usuario_id, nome)
+            VALUES (:id, :usuario_id, :nome)
+            """,
+            payload,
+        )
+
+
+def list_categorias() -> List[Dict[str, Any]]:
+    with get_connection() as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """
+            SELECT id, usuario_id, nome
+            FROM categorias
+            """
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def get_categoria(categoria_id: str) -> Optional[Dict[str, Any]]:
+    with get_connection() as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            """
+            SELECT id, usuario_id, nome
+            FROM categorias
+            WHERE id = ?
+            """,
+            (categoria_id,),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def update_categoria(categoria_id: str, nome: str) -> Optional[Dict[str, Any]]:
+    with get_connection() as conn:
+        cursor = conn.execute(
+            """
+            UPDATE categorias
+            SET nome = ?
+            WHERE id = ?
+            """,
+            (nome, categoria_id),
+        )
+        if cursor.rowcount == 0:
+            return None
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            """
+            SELECT id, usuario_id, nome
+            FROM categorias
+            WHERE id = ?
+            """,
+            (categoria_id,),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def delete_categoria(categoria_id: str) -> bool:
+    with get_connection() as conn:
+        cursor = conn.execute(
+            """
+            DELETE FROM categorias
+            WHERE id = ?
+            """,
+            (categoria_id,),
+        )
+        removido = cursor.rowcount > 0
+    return removido
 
 
 def insert_forma_pagamento(forma_pagamento: Dict[str, Any]) -> None:

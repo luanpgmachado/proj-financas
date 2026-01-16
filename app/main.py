@@ -11,13 +11,18 @@ from fastapi import FastAPI, HTTPException, Response
 
 from app.db import (
     consolidacao_mensal,
+    delete_categoria,
     delete_forma_pagamento,
+    get_categoria,
     get_forma_pagamento,
     init_db,
+    insert_categoria,
     insert_forma_pagamento,
     insert_lancamento,
+    list_categorias,
     list_formas_pagamento,
     list_lancamentos,
+    update_categoria,
     update_forma_pagamento,
 )
 
@@ -91,16 +96,6 @@ def _require_uuid(payload: Dict[str, Any], field: str, errors: List[Dict[str, An
     except ValueError:
         _add_error(errors, ["body", field], "uuid invalido", "value_error")
         return None
-    return value
-
-
-def _validate_uuid_param(value: str, field: str) -> str:
-    try:
-        UUID(value)
-    except ValueError as exc:
-        errors: List[Dict[str, Any]] = []
-        _add_error(errors, ["path", field], "uuid invalido", "value_error")
-        raise PayloadValidationError(errors) from exc
     return value
 
 
@@ -218,7 +213,7 @@ def _validate_payload(payload: Any) -> Dict[str, Any]:
     raise PayloadValidationError(errors)
 
 
-def _validate_forma_pagamento_payload(payload: Any) -> Dict[str, Any]:
+def _validate_nome_payload(payload: Any) -> Dict[str, Any]:
     errors: List[Dict[str, Any]] = []
     if not isinstance(payload, dict):
         _add_error(errors, ["body"], "deve ser objeto JSON", "type_error.object")
@@ -326,10 +321,79 @@ def consolidar_mensal(competencia: Optional[str] = None) -> Dict[str, Any]:
     }
 
 
+@app.post("/categorias", status_code=201)
+def criar_categoria(payload: Dict[str, Any]) -> Dict[str, Any]:
+    try:
+        dados = _validate_nome_payload(payload)
+    except PayloadValidationError as exc:
+        raise HTTPException(status_code=422, detail=exc.errors) from exc
+
+    categoria = {
+        "id": str(uuid4()),
+        "usuario_id": MOCK_USER_ID,
+        "nome": dados["nome"],
+    }
+    try:
+        insert_categoria(categoria)
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(status_code=409, detail="recurso ja existente") from exc
+    except sqlite3.Error as exc:
+        raise HTTPException(status_code=500, detail="erro ao acessar banco") from exc
+    return categoria
+
+
+@app.get("/categorias")
+def listar_categorias_endpoint() -> List[Dict[str, Any]]:
+    try:
+        return list_categorias()
+    except sqlite3.Error as exc:
+        raise HTTPException(status_code=500, detail="erro ao acessar banco") from exc
+
+
+@app.get("/categorias/{categoria_id}")
+def obter_categoria(categoria_id: str) -> Dict[str, Any]:
+    try:
+        categoria = get_categoria(categoria_id)
+    except sqlite3.Error as exc:
+        raise HTTPException(status_code=500, detail="erro ao acessar banco") from exc
+    if categoria is None:
+        raise HTTPException(status_code=404, detail="recurso nao encontrado")
+    return categoria
+
+
+@app.put("/categorias/{categoria_id}")
+def atualizar_categoria(categoria_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    try:
+        dados = _validate_nome_payload(payload)
+    except PayloadValidationError as exc:
+        raise HTTPException(status_code=422, detail=exc.errors) from exc
+
+    try:
+        categoria = update_categoria(categoria_id, dados["nome"])
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(status_code=409, detail="recurso ja existente") from exc
+    except sqlite3.Error as exc:
+        raise HTTPException(status_code=500, detail="erro ao acessar banco") from exc
+    if categoria is None:
+        raise HTTPException(status_code=404, detail="recurso nao encontrado")
+    return categoria
+
+
+@app.delete("/categorias/{categoria_id}", status_code=204)
+def remover_categoria(categoria_id: str) -> Response:
+    try:
+        removido = delete_categoria(categoria_id)
+    except sqlite3.Error as exc:
+        raise HTTPException(status_code=500, detail="erro ao acessar banco") from exc
+    if not removido:
+        raise HTTPException(status_code=404, detail="recurso nao encontrado")
+    return Response(status_code=204)
+
+
 @app.post("/formas-pagamento", status_code=201)
 def criar_forma_pagamento(payload: Dict[str, Any]) -> Dict[str, Any]:
     try:
-        data = _validate_forma_pagamento_payload(payload)
+        data = _validate_nome_payload(payload)
     except PayloadValidationError as exc:
         raise HTTPException(status_code=422, detail=exc.errors) from exc
 
@@ -341,14 +405,16 @@ def criar_forma_pagamento(payload: Dict[str, Any]) -> Dict[str, Any]:
     try:
         insert_forma_pagamento(forma_pagamento)
     except sqlite3.IntegrityError as exc:
-        raise HTTPException(status_code=409, detail="recurso ja existente") from exc
+        errors: List[Dict[str, Any]] = []
+        _add_error(errors, ["body", "nome"], "recurso ja existente", "value_error")
+        raise HTTPException(status_code=422, detail=errors) from exc
     except sqlite3.Error as exc:
         raise HTTPException(status_code=500, detail="erro ao acessar banco") from exc
     return forma_pagamento
 
 
 @app.get("/formas-pagamento")
-def listar_formas_pagamento() -> List[Dict[str, Any]]:
+def listar_formas_pagamento_endpoint() -> List[Dict[str, Any]]:
     try:
         return list_formas_pagamento(MOCK_USER_ID)
     except sqlite3.Error as exc:
@@ -357,11 +423,6 @@ def listar_formas_pagamento() -> List[Dict[str, Any]]:
 
 @app.get("/formas-pagamento/{forma_pagamento_id}")
 def obter_forma_pagamento(forma_pagamento_id: str) -> Dict[str, Any]:
-    try:
-        _validate_uuid_param(forma_pagamento_id, "forma_pagamento_id")
-    except PayloadValidationError as exc:
-        raise HTTPException(status_code=422, detail=exc.errors) from exc
-
     try:
         forma_pagamento = get_forma_pagamento(forma_pagamento_id, MOCK_USER_ID)
     except sqlite3.Error as exc:
@@ -377,8 +438,7 @@ def atualizar_forma_pagamento(
     payload: Dict[str, Any],
 ) -> Dict[str, Any]:
     try:
-        _validate_uuid_param(forma_pagamento_id, "forma_pagamento_id")
-        data = _validate_forma_pagamento_payload(payload)
+        data = _validate_nome_payload(payload)
     except PayloadValidationError as exc:
         raise HTTPException(status_code=422, detail=exc.errors) from exc
 
@@ -389,7 +449,9 @@ def atualizar_forma_pagamento(
             data["nome"],
         )
     except sqlite3.IntegrityError as exc:
-        raise HTTPException(status_code=409, detail="recurso ja existente") from exc
+        errors: List[Dict[str, Any]] = []
+        _add_error(errors, ["body", "nome"], "recurso ja existente", "value_error")
+        raise HTTPException(status_code=422, detail=errors) from exc
     except sqlite3.Error as exc:
         raise HTTPException(status_code=500, detail="erro ao acessar banco") from exc
     if forma_pagamento is None:
@@ -399,11 +461,6 @@ def atualizar_forma_pagamento(
 
 @app.delete("/formas-pagamento/{forma_pagamento_id}", status_code=204)
 def remover_forma_pagamento(forma_pagamento_id: str) -> Response:
-    try:
-        _validate_uuid_param(forma_pagamento_id, "forma_pagamento_id")
-    except PayloadValidationError as exc:
-        raise HTTPException(status_code=422, detail=exc.errors) from exc
-
     try:
         deleted = delete_forma_pagamento(forma_pagamento_id, MOCK_USER_ID)
     except sqlite3.Error as exc:

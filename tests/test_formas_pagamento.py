@@ -37,10 +37,8 @@ def test_criar_listar_formas_pagamento(client):
 
 def test_obter_forma_pagamento_invalida(client):
     response = client.get("/formas-pagamento/not-a-uuid")
-    assert response.status_code == 422
-    detail = response.json()["detail"]
-    assert detail[0]["loc"] == ["path", "forma_pagamento_id"]
-    assert detail[0]["msg"] == "uuid invalido"
+    assert response.status_code == 404
+    assert response.json()["detail"] == "recurso nao encontrado"
 
 
 def test_atualizar_remover_forma_pagamento(client):
@@ -67,5 +65,7 @@ def test_forma_pagamento_nome_unico(client):
     assert first.status_code == 201
 
     second = client.post("/formas-pagamento", json=payload)
-    assert second.status_code == 409
-    assert second.json()["detail"] == "recurso ja existente"
+    assert second.status_code == 422
+    detail = second.json()["detail"]
+    assert detail[0]["loc"] == ["body", "nome"]
+    assert detail[0]["msg"] == "recurso ja existente"
