@@ -12,4 +12,4 @@
 - Nao executados (sugerido: `python -m unittest discover -s tests -v`)
 
 ## Observacoes
-- Esta branch inclui implementacoes e testes de formas de pagamento e validacao referencial em lancamentos, que pertencem a DEV-V2-3 e DEV-V2-4 e devem ser separadas.
+- Nenhuma.

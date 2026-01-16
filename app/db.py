@@ -58,16 +58,6 @@ def init_db() -> None:
             )
             """
         )
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS formas_pagamento (
-                id TEXT PRIMARY KEY,
-                usuario_id TEXT NOT NULL,
-                nome TEXT NOT NULL,
-                UNIQUE (usuario_id, nome)
-            )
-            """
-        )
 
 
 def insert_lancamento(lancamento: Dict[str, Any]) -> None:
@@ -251,85 +241,6 @@ def delete_categoria(categoria_id: str) -> bool:
             WHERE id = ?
             """,
             (categoria_id,),
-        )
-        removido = cursor.rowcount > 0
-    return removido
-
-
-def insert_forma_pagamento(forma_pagamento: Dict[str, Any]) -> None:
-    payload = {
-        "id": forma_pagamento["id"],
-        "usuario_id": forma_pagamento["usuario_id"],
-        "nome": forma_pagamento["nome"],
-    }
-    with get_connection() as conn:
-        conn.execute(
-            """
-            INSERT INTO formas_pagamento (id, usuario_id, nome)
-            VALUES (:id, :usuario_id, :nome)
-            """,
-            payload,
-        )
-
-
-def list_formas_pagamento() -> List[Dict[str, Any]]:
-    with get_connection() as conn:
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            """
-            SELECT id, usuario_id, nome
-            FROM formas_pagamento
-            """
-        ).fetchall()
-    return [dict(row) for row in rows]
-
-
-def get_forma_pagamento(forma_pagamento_id: str) -> Optional[Dict[str, Any]]:
-    with get_connection() as conn:
-        conn.row_factory = sqlite3.Row
-        row = conn.execute(
-            """
-            SELECT id, usuario_id, nome
-            FROM formas_pagamento
-            WHERE id = ?
-            """,
-            (forma_pagamento_id,),
-        ).fetchone()
-    return dict(row) if row else None
-
-
-def update_forma_pagamento(forma_pagamento_id: str, nome: str) -> Optional[Dict[str, Any]]:
-    with get_connection() as conn:
-        cursor = conn.execute(
-            """
-            UPDATE formas_pagamento
-            SET nome = ?
-            WHERE id = ?
-            """,
-            (nome, forma_pagamento_id),
-        )
-        if cursor.rowcount == 0:
-            return None
-        conn.row_factory = sqlite3.Row
-        row = conn.execute(
-            """
-            SELECT id, usuario_id, nome
-            FROM formas_pagamento
-            WHERE id = ?
-            """,
-            (forma_pagamento_id,),
-        ).fetchone()
-    return dict(row) if row else None
-
-
-def delete_forma_pagamento(forma_pagamento_id: str) -> bool:
-    with get_connection() as conn:
-        cursor = conn.execute(
-            """
-            DELETE FROM formas_pagamento
-            WHERE id = ?
-            """,
-            (forma_pagamento_id,),
         )
         removido = cursor.rowcount > 0
     return removido

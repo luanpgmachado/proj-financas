@@ -12,18 +12,13 @@ from fastapi import FastAPI, HTTPException, Response
 from app.db import (
     consolidacao_mensal,
     delete_categoria,
-    delete_forma_pagamento,
     get_categoria,
-    get_forma_pagamento,
     init_db,
     insert_categoria,
-    insert_forma_pagamento,
     insert_lancamento,
     list_categorias,
-    list_formas_pagamento,
     list_lancamentos,
     update_categoria,
-    update_forma_pagamento,
 )
 
 app = FastAPI(title="Financeiro B&L API", version="v1")
@@ -286,18 +281,6 @@ def criar_lancamento(payload: Dict[str, Any]) -> Dict[str, Any]:
     except PayloadValidationError as exc:
         raise HTTPException(status_code=422, detail=exc.errors) from exc
 
-    if lancamento["tipo_lancamento"] != "ENTRADA":
-        try:
-            categoria = get_categoria(lancamento["categoria_id"])
-            forma_pagamento = get_forma_pagamento(lancamento["forma_pagamento_id"])
-        except sqlite3.Error as exc:
-            raise HTTPException(status_code=500, detail="erro ao acessar banco") from exc
-        if categoria is None or forma_pagamento is None:
-            raise HTTPException(
-                status_code=404,
-                detail="categoria ou forma de pagamento nao encontrada",
-            )
-
     insert_lancamento(lancamento)
     return lancamento
 
@@ -402,73 +385,3 @@ def remover_categoria(categoria_id: str) -> Response:
         raise HTTPException(status_code=404, detail="recurso nao encontrado")
     return Response(status_code=204)
 
-
-@app.post("/formas-pagamento", status_code=201)
-def criar_forma_pagamento(payload: Dict[str, Any]) -> Dict[str, Any]:
-    try:
-        dados = _validate_nome_payload(payload)
-    except PayloadValidationError as exc:
-        raise HTTPException(status_code=422, detail=exc.errors) from exc
-
-    forma_pagamento = {
-        "id": str(uuid4()),
-        "usuario_id": MOCK_USER_ID,
-        "nome": dados["nome"],
-    }
-    try:
-        insert_forma_pagamento(forma_pagamento)
-    except sqlite3.IntegrityError as exc:
-        raise HTTPException(status_code=409, detail="recurso ja existente") from exc
-    except sqlite3.Error as exc:
-        raise HTTPException(status_code=500, detail="erro ao acessar banco") from exc
-    return forma_pagamento
-
-
-@app.get("/formas-pagamento")
-def listar_formas_pagamento_endpoint() -> List[Dict[str, Any]]:
-    try:
-        return list_formas_pagamento()
-    except sqlite3.Error as exc:
-        raise HTTPException(status_code=500, detail="erro ao acessar banco") from exc
-
-
-@app.get("/formas-pagamento/{forma_pagamento_id}")
-def obter_forma_pagamento(forma_pagamento_id: str) -> Dict[str, Any]:
-    try:
-        forma_pagamento = get_forma_pagamento(forma_pagamento_id)
-    except sqlite3.Error as exc:
-        raise HTTPException(status_code=500, detail="erro ao acessar banco") from exc
-    if forma_pagamento is None:
-        raise HTTPException(status_code=404, detail="recurso nao encontrado")
-    return forma_pagamento
-
-
-@app.put("/formas-pagamento/{forma_pagamento_id}")
-def atualizar_forma_pagamento(
-    forma_pagamento_id: str, payload: Dict[str, Any]
-) -> Dict[str, Any]:
-    try:
-        dados = _validate_nome_payload(payload)
-    except PayloadValidationError as exc:
-        raise HTTPException(status_code=422, detail=exc.errors) from exc
-
-    try:
-        forma_pagamento = update_forma_pagamento(forma_pagamento_id, dados["nome"])
-    except sqlite3.IntegrityError as exc:
-        raise HTTPException(status_code=409, detail="recurso ja existente") from exc
-    except sqlite3.Error as exc:
-        raise HTTPException(status_code=500, detail="erro ao acessar banco") from exc
-    if forma_pagamento is None:
-        raise HTTPException(status_code=404, detail="recurso nao encontrado")
-    return forma_pagamento
-
-
-@app.delete("/formas-pagamento/{forma_pagamento_id}", status_code=204)
-def remover_forma_pagamento(forma_pagamento_id: str) -> Response:
-    try:
-        removido = delete_forma_pagamento(forma_pagamento_id)
-    except sqlite3.Error as exc:
-        raise HTTPException(status_code=500, detail="erro ao acessar banco") from exc
-    if not removido:
-        raise HTTPException(status_code=404, detail="recurso nao encontrado")
-    return Response(status_code=204)
