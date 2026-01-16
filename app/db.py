@@ -355,6 +355,34 @@ def delete_forma_pagamento(forma_pagamento_id: str, usuario_id: str) -> bool:
     return cursor.rowcount > 0
 
 
+def categoria_existe(categoria_id: str, usuario_id: str) -> bool:
+    with get_connection() as conn:
+        row = conn.execute(
+            """
+            SELECT 1
+            FROM categorias
+            WHERE id = ? AND usuario_id = ?
+            LIMIT 1
+            """,
+            (categoria_id, usuario_id),
+        ).fetchone()
+    return row is not None
+
+
+def forma_pagamento_existe(forma_pagamento_id: str, usuario_id: str) -> bool:
+    with get_connection() as conn:
+        row = conn.execute(
+            """
+            SELECT 1
+            FROM formas_pagamento
+            WHERE id = ? AND usuario_id = ?
+            LIMIT 1
+            """,
+            (forma_pagamento_id, usuario_id),
+        ).fetchone()
+    return row is not None
+
+
 def _sum_valores_por_tipo(competencia: str, tipos: Sequence[str]) -> float:
     placeholders = ", ".join("?" for _ in tipos)
     query = f"""

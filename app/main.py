@@ -10,9 +10,11 @@ from uuid import UUID, uuid4
 from fastapi import FastAPI, HTTPException, Response
 
 from app.db import (
+    categoria_existe,
     consolidacao_mensal,
     delete_categoria,
     delete_forma_pagamento,
+    forma_pagamento_existe,
     get_categoria,
     get_forma_pagamento,
     init_db,
@@ -273,6 +275,16 @@ def _round_money(value: Decimal) -> float:
     return float(value.quantize(MONEY_QUANT, rounding=ROUND_HALF_UP))
 
 
+def _validar_referencias_lancamento(lancamento: Dict[str, Any]) -> None:
+    if lancamento["tipo_lancamento"] == "ENTRADA":
+        return
+    usuario_id = lancamento["usuario_id"]
+    if not categoria_existe(lancamento["categoria_id"], usuario_id):
+        raise HTTPException(status_code=404, detail="categoria nao encontrada")
+    if not forma_pagamento_existe(lancamento["forma_pagamento_id"], usuario_id):
+        raise HTTPException(status_code=404, detail="forma de pagamento nao encontrada")
+
+
 @app.on_event("startup")
 def startup() -> None:
     init_db()
@@ -282,6 +294,7 @@ def startup() -> None:
 def criar_lancamento(payload: Dict[str, Any]) -> Dict[str, Any]:
     try:
         lancamento = _validate_payload(payload)
+        _validar_referencias_lancamento(lancamento)
     except PayloadValidationError as exc:
         raise HTTPException(status_code=422, detail=exc.errors) from exc
 
