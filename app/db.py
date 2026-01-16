@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import sqlite3
 from pathlib import Path
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 DB_PATH = os.getenv("FINANCAS_DB_PATH", str(BASE_DIR / "data" / "financas.db"))
@@ -35,6 +35,16 @@ def init_db() -> None:
                 pago INTEGER,
                 valor_total REAL,
                 numero_parcelas INTEGER
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS formas_pagamento (
+                id TEXT PRIMARY KEY,
+                usuario_id TEXT NOT NULL,
+                nome TEXT NOT NULL,
+                UNIQUE(usuario_id, nome)
             )
             """
         )
@@ -145,6 +155,105 @@ def list_lancamentos() -> List[Dict[str, Any]]:
         itens.append(item)
 
     return itens
+
+
+def insert_forma_pagamento(forma_pagamento: Dict[str, Any]) -> None:
+    payload = {
+        "id": forma_pagamento["id"],
+        "usuario_id": forma_pagamento["usuario_id"],
+        "nome": forma_pagamento["nome"],
+    }
+    with get_connection() as conn:
+        conn.execute(
+            """
+            INSERT INTO formas_pagamento (
+                id,
+                usuario_id,
+                nome
+            ) VALUES (
+                :id,
+                :usuario_id,
+                :nome
+            )
+            """,
+            payload,
+        )
+
+
+def list_formas_pagamento(usuario_id: str) -> List[Dict[str, Any]]:
+    with get_connection() as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """
+            SELECT id, usuario_id, nome
+            FROM formas_pagamento
+            WHERE usuario_id = ?
+            """,
+            (usuario_id,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def get_forma_pagamento(forma_pagamento_id: str, usuario_id: str) -> Optional[Dict[str, Any]]:
+    with get_connection() as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            """
+            SELECT id, usuario_id, nome
+            FROM formas_pagamento
+            WHERE id = ? AND usuario_id = ?
+            """,
+            (forma_pagamento_id, usuario_id),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def update_forma_pagamento(
+    forma_pagamento_id: str,
+    usuario_id: str,
+    nome: str,
+) -> Optional[Dict[str, Any]]:
+    with get_connection() as conn:
+        conn.row_factory = sqlite3.Row
+        existing = conn.execute(
+            """
+            SELECT id, usuario_id, nome
+            FROM formas_pagamento
+            WHERE id = ? AND usuario_id = ?
+            """,
+            (forma_pagamento_id, usuario_id),
+        ).fetchone()
+        if existing is None:
+            return None
+        conn.execute(
+            """
+            UPDATE formas_pagamento
+            SET nome = ?
+            WHERE id = ? AND usuario_id = ?
+            """,
+            (nome, forma_pagamento_id, usuario_id),
+        )
+        row = conn.execute(
+            """
+            SELECT id, usuario_id, nome
+            FROM formas_pagamento
+            WHERE id = ? AND usuario_id = ?
+            """,
+            (forma_pagamento_id, usuario_id),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def delete_forma_pagamento(forma_pagamento_id: str, usuario_id: str) -> bool:
+    with get_connection() as conn:
+        cursor = conn.execute(
+            """
+            DELETE FROM formas_pagamento
+            WHERE id = ? AND usuario_id = ?
+            """,
+            (forma_pagamento_id, usuario_id),
+        )
+    return cursor.rowcount > 0
 
 
 def _sum_valores_por_tipo(competencia: str, tipos: Sequence[str]) -> float:
