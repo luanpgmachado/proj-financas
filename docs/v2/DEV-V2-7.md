@@ -1,13 +1,15 @@
 # DEV-V2-7 - frontend/v2-lancamentos-integracao
 
 ## Escopo entregue
-- TODO: descrever o que foi implementado.
+- Selecao de categoria e forma de pagamento no formulario de lancamentos.
+- Carregamento de `/categorias` e `/formas-pagamento` para preencher selects.
+- Envio de `categoria_id` e `forma_pagamento_id` conforme contrato V2.
 
 ## Ajustes tecnicos
-- TODO: descrever ajustes tecnicos relevantes.
+- Tratamento de falhas ao carregar listas auxiliares.
 
 ## Testes
-- TODO: informar comandos de testes e resultados.
+- Teste manual via `npm run dev` com backend V2 ativo.
 
 ## Observacoes
-- TODO: pendencias ou limites.
+- O front apenas consome dados; nenhuma logica de calculo foi adicionada.

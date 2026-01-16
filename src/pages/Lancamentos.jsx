@@ -140,6 +140,14 @@ export default function Lancamentos() {
     () => Boolean(getOperation(doc, "/lancamentos", "post")),
     [doc]
   );
+  const categoriasReady = useMemo(
+    () => Boolean(getOperation(doc, "/categorias", "get")),
+    [doc]
+  );
+  const formasReady = useMemo(
+    () => Boolean(getOperation(doc, "/formas-pagamento", "get")),
+    [doc]
+  );
   const canList = baseUrlConfigured && listReady;
   const canCreate = baseUrlConfigured && createReady;
   const missingInfo = useMemo(() => {
@@ -207,6 +215,12 @@ export default function Lancamentos() {
   const [submitSuccess, setSubmitSuccess] = useState("");
   const [validationErrors, setValidationErrors] = useState([]);
   const [formValues, setFormValues] = useState({});
+  const [categorias, setCategorias] = useState([]);
+  const [formasPagamento, setFormasPagamento] = useState([]);
+  const [categoriasError, setCategoriasError] = useState("");
+  const [formasError, setFormasError] = useState("");
+  const [categoriasLoading, setCategoriasLoading] = useState(false);
+  const [formasLoading, setFormasLoading] = useState(false);
   const [refreshIndex, setRefreshIndex] = useState(0);
 
   useEffect(() => {
@@ -280,6 +294,68 @@ export default function Lancamentos() {
 
     load();
   }, [baseUrl, canList, refreshIndex]);
+
+  useEffect(() => {
+    if (!baseUrlConfigured || !categoriasReady) {
+      setCategorias([]);
+      return;
+    }
+
+    const loadCategorias = async () => {
+      setCategoriasLoading(true);
+      setCategoriasError("");
+      try {
+        const data = await apiRequest(baseUrl, "/categorias", { method: "GET" });
+        if (Array.isArray(data)) {
+          setCategorias(data);
+          return;
+        }
+        if (Array.isArray(data?.items)) {
+          setCategorias(data.items);
+          return;
+        }
+        setCategorias([]);
+      } catch (error) {
+        setCategoriasError("Nao foi possivel carregar as categorias.");
+        setCategorias([]);
+      } finally {
+        setCategoriasLoading(false);
+      }
+    };
+
+    loadCategorias();
+  }, [baseUrl, baseUrlConfigured, categoriasReady]);
+
+  useEffect(() => {
+    if (!baseUrlConfigured || !formasReady) {
+      setFormasPagamento([]);
+      return;
+    }
+
+    const loadFormas = async () => {
+      setFormasLoading(true);
+      setFormasError("");
+      try {
+        const data = await apiRequest(baseUrl, "/formas-pagamento", { method: "GET" });
+        if (Array.isArray(data)) {
+          setFormasPagamento(data);
+          return;
+        }
+        if (Array.isArray(data?.items)) {
+          setFormasPagamento(data.items);
+          return;
+        }
+        setFormasPagamento([]);
+      } catch (error) {
+        setFormasError("Nao foi possivel carregar as formas de pagamento.");
+        setFormasPagamento([]);
+      } finally {
+        setFormasLoading(false);
+      }
+    };
+
+    loadFormas();
+  }, [baseUrl, baseUrlConfigured, formasReady]);
 
   const handleChange = (name, value) => {
     setFormValues((prev) => ({ ...prev, [name]: value }));
@@ -356,8 +432,9 @@ export default function Lancamentos() {
         setSubmitSuccess("");
         return;
       }
+      const detail = error?.data?.detail;
       setValidationErrors([]);
-      setSubmitError("Nao foi possivel criar o lancamento.");
+      setSubmitError(detail || "Nao foi possivel criar o lancamento.");
       setSubmitSuccess("");
     }
   };
@@ -514,69 +591,142 @@ export default function Lancamentos() {
                 </p>
               )}
 
-              {fields.map((field) => (
-                <div key={field.name} className="space-y-2">
-                  <label className="text-sm font-semibold text-ink">
-                    {field.label}
-                  </label>
-
-                  {field.options && (
-                    <select
-                      className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
-                      value={formValues[field.name]}
-                      onChange={(event) => handleChange(field.name, event.target.value)}
-                      required={field.required}
-                    >
-                      <option value="">Selecione</option>
-                      {field.options.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  {!field.options && field.type === "boolean" && (
-                    <label className="flex items-center gap-2 text-sm text-ink-soft">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(formValues[field.name])}
-                        onChange={(event) => handleChange(field.name, event.target.checked)}
-                      />
-                      {formValues[field.name] ? "Sim" : "Nao"}
+              {fields.map((field) => {
+                const isCategoriaField = field.name === "categoria_id";
+                const isFormaField = field.name === "forma_pagamento_id";
+                return (
+                  <div key={field.name} className="space-y-2">
+                    <label className="text-sm font-semibold text-ink">
+                      {field.label}
                     </label>
-                  )}
 
-                  {!field.options && field.isJson && (
-                    <textarea
-                      rows={4}
-                      className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
-                      value={formValues[field.name]}
-                      onChange={(event) => handleChange(field.name, event.target.value)}
-                      placeholder="JSON conforme o schema"
-                      required={field.required}
-                    />
-                  )}
+                    {isCategoriaField && (
+                      <>
+                        <select
+                          className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+                          value={formValues[field.name]}
+                          onChange={(event) => handleChange(field.name, event.target.value)}
+                          required={field.required}
+                          disabled={!categoriasReady || categoriasLoading}
+                        >
+                          <option value="">Selecione</option>
+                          {categorias.map((categoria) => (
+                            <option key={categoria.id} value={categoria.id}>
+                              {categoria.nome || categoria.id}
+                            </option>
+                          ))}
+                        </select>
+                        {!categoriasReady && (
+                          <p className="text-xs text-ink-soft">
+                            Endpoint /categorias nao definido no OpenAPI.
+                          </p>
+                        )}
+                        {categoriasReady && !categoriasLoading && categorias.length === 0 && (
+                          <p className="text-xs text-ink-soft">
+                            Nenhuma categoria cadastrada.
+                          </p>
+                        )}
+                        {categoriasError && (
+                          <p className="text-xs text-rose-600">{categoriasError}</p>
+                        )}
+                      </>
+                    )}
 
-                  {!field.options && !field.isJson && field.type !== "boolean" && (
-                    <input
-                      type={
-                        field.format === "date"
-                          ? "date"
-                          : field.format === "date-time"
-                          ? "datetime-local"
-                          : field.type === "number" || field.type === "integer"
-                          ? "number"
-                          : "text"
-                      }
-                      className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
-                      value={formValues[field.name]}
-                      onChange={(event) => handleChange(field.name, event.target.value)}
-                      required={field.required}
-                    />
-                  )}
-                </div>
-              ))}
+                    {isFormaField && (
+                      <>
+                        <select
+                          className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+                          value={formValues[field.name]}
+                          onChange={(event) => handleChange(field.name, event.target.value)}
+                          required={field.required}
+                          disabled={!formasReady || formasLoading}
+                        >
+                          <option value="">Selecione</option>
+                          {formasPagamento.map((forma) => (
+                            <option key={forma.id} value={forma.id}>
+                              {forma.nome || forma.id}
+                            </option>
+                          ))}
+                        </select>
+                        {!formasReady && (
+                          <p className="text-xs text-ink-soft">
+                            Endpoint /formas-pagamento nao definido no OpenAPI.
+                          </p>
+                        )}
+                        {formasReady && !formasLoading && formasPagamento.length === 0 && (
+                          <p className="text-xs text-ink-soft">
+                            Nenhuma forma cadastrada.
+                          </p>
+                        )}
+                        {formasError && (
+                          <p className="text-xs text-rose-600">{formasError}</p>
+                        )}
+                      </>
+                    )}
+
+                    {!isCategoriaField && !isFormaField && field.options && (
+                      <select
+                        className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+                        value={formValues[field.name]}
+                        onChange={(event) => handleChange(field.name, event.target.value)}
+                        required={field.required}
+                      >
+                        <option value="">Selecione</option>
+                        {field.options.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {!isCategoriaField && !isFormaField && field.type === "boolean" && (
+                      <label className="flex items-center gap-2 text-sm text-ink-soft">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(formValues[field.name])}
+                          onChange={(event) =>
+                            handleChange(field.name, event.target.checked)
+                          }
+                        />
+                        {formValues[field.name] ? "Sim" : "Nao"}
+                      </label>
+                    )}
+
+                    {!isCategoriaField && !isFormaField && field.isJson && (
+                      <textarea
+                        rows={4}
+                        className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+                        value={formValues[field.name]}
+                        onChange={(event) => handleChange(field.name, event.target.value)}
+                        placeholder="JSON conforme o schema"
+                        required={field.required}
+                      />
+                    )}
+
+                    {!isCategoriaField &&
+                      !isFormaField &&
+                      !field.isJson &&
+                      field.type !== "boolean" && (
+                        <input
+                          type={
+                            field.format === "date"
+                              ? "date"
+                              : field.format === "date-time"
+                              ? "datetime-local"
+                              : field.type === "number" || field.type === "integer"
+                              ? "number"
+                              : "text"
+                          }
+                          className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+                          value={formValues[field.name]}
+                          onChange={(event) => handleChange(field.name, event.target.value)}
+                          required={field.required}
+                        />
+                      )}
+                  </div>
+                );
+              })}
 
               {submitError && (
                 <p className="text-sm font-semibold text-rose-600">{submitError}</p>
